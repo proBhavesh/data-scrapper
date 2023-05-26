@@ -4,7 +4,7 @@ require("dotenv").config({ path: "../../.env" });
 const blogLinks = require("./UiDevBlogLinks.json");
 let browser;
 
-// const { persistData, getScrapeData } = require("../../helpers.js");
+// const { appendDataToFile, checkAndScrapeData } = require("../../helpers.js");
 
 /**
  * Scrapes the data from the provided page link, using the provided evaluation scheme,
@@ -14,7 +14,7 @@ let browser;
  * @param {string} evaluationScheme - The CSS selector to use for evaluating the data on the page.
  * @returns {void}
  */
-const getData = async (pageLink, evaluationScheme) => {
+const scrapePageData = async (pageLink, evaluationScheme) => {
 	try {
 		const auth =
 			process.env.BRIGHTDATA_URL + ":" + process.env.BRIGHTDATA_PASSWORD;
@@ -63,7 +63,7 @@ const getData = async (pageLink, evaluationScheme) => {
  * @param {string} fileName - The name of the file to write the data to.
  * @returns {void}
  */
-const persistData = (blogLinks, fileName) => {
+const appendDataToFile = (blogLinks, fileName) => {
 	let data = [];
 
 	try {
@@ -89,19 +89,19 @@ const persistData = (blogLinks, fileName) => {
 };
 
 /**
- * Checks if the specified file is empty. If it is empty, calls the getData function
+ * Checks if the specified file is empty. If it is empty, calls the scrapePageData function
  * with the specified parameters. Otherwise, logs a message to the console.
  * @returns {void}
  */
 
-const getScrapeData = async (pageLink, fileName, evaluationScheme) => {
+const checkAndScrapeData = async (pageLink, fileName, evaluationScheme) => {
 	try {
 		const stats = fs.statSync(fileName);
 		if (stats.size === 0) {
-			// Call the getData function with the specified parameters
-			const links = await getData(pageLink, evaluationScheme);
+			// Call the scrapePageData function with the specified parameters
+			const links = await scrapePageData(pageLink, evaluationScheme);
 			console.log(await links);
-			const persistedData = await persistData(links, fileName);
+			const persistedData = await appendDataToFile(links, fileName);
 		} else {
 			console.log("File already contains data :", fileName);
 			return;
@@ -111,7 +111,7 @@ const getScrapeData = async (pageLink, fileName, evaluationScheme) => {
 	}
 };
 
-const getAllData = async () => {
+const scrapeAllPagesData = async () => {
 	const base_url = "https://ui.dev";
 	const urls = blogLinks[0].Links;
 	console.log("semi-links ", urls);
@@ -120,9 +120,13 @@ const getAllData = async () => {
 	console.log("full-links ", pageLinks);
 	const allData = await Promise.all(
 		pageLinks.map(async (pageLink) => {
-			const data = await getScrapeData(pageLink, "./fullBlogs.json", "*");
+			const data = await checkAndScrapeData(
+				pageLink,
+				"./fullBlogs.json",
+				"*"
+			);
 		})
 	);
 };
 
-getAllData();
+scrapeAllPagesData();
